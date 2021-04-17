@@ -1,15 +1,19 @@
 import cv2
 import numpy as np
 import copy
+import tensorflow as tf
+
 from image_registration import cross_correlation_shifts
 from src.utils import draw_ball_curve, fill_lost_tracking
 from src.FrameInfo import FrameInfo
 
 
-def generate_overlay(video_frames, width, height, fps, outputPath):
-    print('Saving overlay result to', outputPath)
-    codec = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(outputPath, codec, fps / 2, (width, height))
+def generate_overlay(video_frames, width, height, fps, output_path, verbose=0):
+    logger = tf.get_logger()
+    logger.info(f'Saving overlay result to {output_path}')
+
+    codec = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, codec, fps / 2, (width, height))
 
     frame_lists = sorted(video_frames, key=len, reverse=True)
     balls_in_curves = [[] for i in range(len(frame_lists))]
@@ -46,7 +50,10 @@ def generate_overlay(video_frames, width, height, fps, outputPath):
             background_frame = draw_ball_curve(background_frame, trajectory)
 
         result_frame = cv2.cvtColor(background_frame, cv2.COLOR_RGB2BGR)
-        cv2.imshow('result_frame', result_frame)
+
+        if verbose == 1:
+            cv2.imshow('result_frame', result_frame)
+
         out.write(result_frame)
         if cv2.waitKey(60) & 0xFF == ord('q'):
             break
