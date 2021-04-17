@@ -15,8 +15,7 @@ from src.SORT_tracker.tracker import Tracker
 
 
 # Get the pitching section in the whole video
-def get_pitch_frames(video_path, infer, input_size, iou, score_threshold):
-    print("Video from: ", video_path)
+def get_pitch_frames(video_path, infer, input_size, iou, score_threshold, verbose=0):
     vid = cv2.VideoCapture(video_path)
 
     width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -43,7 +42,6 @@ def get_pitch_frames(video_path, infer, input_size, iou, score_threshold):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frames.append(FrameInfo(frame, False))
         else:
-            print("Processing complete")
             break
 
         # Detect the baseball in the frame
@@ -87,7 +85,10 @@ def get_pitch_frames(video_path, infer, input_size, iou, score_threshold):
 
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         detection = cv2.resize((result), (0, 0), fx=0.5, fy=0.5)
-        cv2.imshow("result", detection)
+
+        if verbose == 1: 
+            cv2.imshow("result", detection)
+
         if cv2.waitKey(50) & 0xFF == ord('q'):
             break
 
@@ -103,6 +104,8 @@ def get_pitch_frames(video_path, infer, input_size, iou, score_threshold):
 
 # Tensorflow Object Detection API Sample
 def detect(infer, frame, input_size, iou, score_threshold, detected_balls):
+    logger = tf.get_logger()
+
     image_data = cv2.resize(frame, (input_size, input_size))
     image_data = image_data / 255.
     image_data = image_data[np.newaxis, ...].astype(np.float32)
@@ -145,7 +148,7 @@ def detect(infer, frame, input_size, iou, score_threshold, detected_balls):
             centerX = int((coor[1] + coor[3]) / 2)
             centerY = int((coor[0] + coor[2]) / 2)
 
-            print(f'Baseball Detected ({centerX}, {centerY}), Confidence: {str(round(score, 2))}')
+            logger.info(f'Baseball Detected ({centerX}, {centerY}), Confidence: {str(round(score, 2))}')
             # cv2.circle(frame, (centerX, centerY), 15, (255, 0, 0), -1)
             detected_balls.append([centerX, centerY])
             detections.append(np.array([coor[1]-offset, coor[0]-offset, coor[3]+offset, coor[2]+offset, score]))
@@ -179,8 +182,10 @@ def add_balls_before_SORT(frames, detected, tracked, tracker_min_hits):
 
 
 def add_lost_frames(frame_id, last_tracked_frame, frames, pitch_frames):
+    logger = tf.get_logger()
+
     if(frame_id - last_tracked_frame > 1):
-        print('Lost frames:', frame_id - last_tracked_frame)
+        logger.warning(f'Lost frames: {frame_id - last_tracked_frame}')
         frames_to_add = frames[last_tracked_frame: frame_id]
 
         # Mark the detection in lost in this frame

@@ -1,7 +1,26 @@
+import sys, copy, warnings, logging
 import cv2
-import copy
 import numpy as np
+import tensorflow as tf 
+
+from pathlib import Path
 from src.FrameInfo import FrameInfo
+
+
+def get_project_root():
+    return Path(__file__).parent.parent
+
+
+def initialize_tensorflow(): 
+    if not sys.warnoptions:
+        warnings.simplefilter("ignore")
+
+    tf.get_logger().setLevel(logging.INFO)
+
+    # Allow GPU memory growth
+    physical_devices = tf.config.experimental.list_physical_devices('GPU')
+    if len(physical_devices) > 0:
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 def draw_ball_curve(frame, trajectory):
